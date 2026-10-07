@@ -6,7 +6,7 @@
 ## The One-Minute Version
 
 > [!NOTE]
-> **What this is:** A bridge that lets a developer (or anyone using Claude Code) ask a question in plain English — like *"Summarize the Jennifer Blake account"* — and get back a real answer from a Salesforce **Agentforce agent**, pulling live CRM data.
+> **What this is:** A bridge that lets a developer (or anyone using Claude Code) ask a question in plain English — like *"Summarize the Omega, Inc. account"* — and get back a real answer from a Salesforce **Agentforce agent**, pulling live CRM data.
 
 > [!TIP]
 > **Why it matters:** The same Agentforce agent your sales team uses inside Salesforce can now be called from **any tool that speaks MCP** — Claude Code, VS Code, a chatbot, a script, a web app. One agent, many front doors.
@@ -30,7 +30,7 @@
 
 ### Step 1 — You ask a question
 You type into Claude Code:
-> *"Summarize the Jennifer Blake account using Agentforce."*
+> *"Summarize the Omega, Inc. account using Agentforce."*
 
 ### Step 2 — Claude Code picks the right tool
 Claude Code has a catalog of available tools. It recognizes your question is about a Salesforce account summary and reaches for the `get_account_summary` tool.
@@ -46,7 +46,7 @@ The MCP server (a small program running locally or in the cloud) receives the re
 It tells Salesforce: *"Start a new session with the Account Summary agent."* Salesforce returns a **session ID** — think of it as a conversation thread.
 
 ### Step 6 — The agent gets the question
-The MCP server passes your question into that session: *"Summarize the account named Jennifer Blake."*
+The MCP server passes your question into that session: *"Summarize the account named Omega, Inc."*
 
 ### Step 7 — Agentforce does its thing
 The agent — which has been pre-configured in Salesforce with knowledge of your data model — runs its playbook:
@@ -105,25 +105,38 @@ flowchart LR
 > A clean, formatted answer like this:
 
 ```
-# Account Summary: Jennifer Blake
+# Account Summary: Omega, Inc.
 
 ## Company Info
-- Phone: (312) 555-1212
-- Billing Location: Chicago, United States
+- Industry: Technology
+- Website: URL_Redacted
+- Phone: (415) 555-0153
+- Billing Location: San Francisco, US
 
-## Top Open Opportunity
-| Name                                           | Stage         | Amount    | Close Date |
-|------------------------------------------------|---------------|-----------|------------|
-| Managed Portfolio Proposal for Jennifer Blake  | Qualification | $72,000   | 2026-10-03 |
+## Call Notes
+> Client called frustrated — competitor offered 50bps higher on their $3M
+> money market. Relationship is 11 years, strong overall (operating
+> accounts, two term loans, merchant services). Escalated to pricing
+> exception committee; proposed a relationship-rate tier to retain.
+> Reassured client we value the full relationship, not just the deposit.
+> Action: confirm exception approval within 5 business days, call back
+> with revised rate.
+
+## Top Open Opportunities
+_No open opportunities._
 
 ## Recent Cases (last 90 days)
-- Total: 1 (Working: 1)
+- Total: 0
 
 ## Key Contacts
-- Jennifer Blake — jblake1234@example.com
+- Lauren Bailey — SVP, Technology (lbailey@example.com)
+- James Wu
+
+## Total Closed-Won Revenue
+$0.00
 ```
 
-No SQL. No clicking through tabs. No training on where to find the data.
+No SQL. No clicking through tabs. No training on where to find the data. **And notice two governance-grade details in that output:** the `URL_Redacted` field (Trust Layer policy applied automatically) and the full Call Notes passage (free-text relationship context that would have taken a rep minutes to hunt down in Chatter).
 
 ---
 
