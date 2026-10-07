@@ -1,0 +1,249 @@
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import express, { type Request, type Response, type NextFunction } from "express";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+import "dotenv/config";
+
+const env = z
+  .object({
+    SF_MY_DOMAIN_URL: z.string().url(),
+    SF_CONSUMER_KEY: z.string().min(1),
+    SF_CONSUMER_SECRET: z.string().min(1),
+    SF_AGENT_ID: z.string().min(1),
+    SF_EINSTEIN_API_BASE: z.string().url().default("https://api.salesforce.com"),
+    PORT: z.coerce.number().default(3000),
+    MCP_BEARER_TOKEN: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z.string().min(16).optional(),
+    ),
+  })
+  .parse(process.env);
+
+const log = (msg: string, extra?: unknown) => {
+  const line = extra === undefined ? msg : `${msg} ${JSON.stringify(extra)}`;
+  process.stderr.write(`[agentforce-mcp] ${line}\n`);
+};
+
+interface TokenCache {
+  accessToken: string;
+  expiresAt: number;
+}
+let tokenCache: TokenCache | null = null;
+
+async function getAccessToken(): Promise<string> {
+  if (tokenCache && tokenCache.expiresAt > Date.now() + 60_000) {
+    return tokenCache.accessToken;
+  }
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: env.SF_CONSUMER_KEY,
+    client_secret: env.SF_CONSUMER_SECRET,
+  });
+  const res = await fetch(`${env.SF_MY_DOMAIN_URL}/services/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!res.ok) {
+    throw new Error(`OAuth token request failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as { access_token: string };
+  tokenCache = {
+    accessToken: json.access_token,
+    expiresAt: Date.now() + 25 * 60 * 1000,
+  };
+  return json.access_token;
+}
+
+interface AgentMessage {
+  type: string;
+  message?: string;
+}
+
+async function startSession(accessToken: string): Promise<string> {
+  const url = `${env.SF_EINSTEIN_API_BASE}/einstein/ai-agent/v1/agents/${env.SF_AGENT_ID}/sessions`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      externalSessionKey: randomUUID(),
+      instanceConfig: { endpoint: env.SF_MY_DOMAIN_URL },
+      streamingCapabilities: { chunkTypes: ["Text"] },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Start session failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as { sessionId: string };
+  return json.sessionId;
+}
+
+async function sendMessage(
+  accessToken: string,
+  sessionId: string,
+  text: string,
+): Promise<string> {
+  const url = `${env.SF_EINSTEIN_API_BASE}/einstein/ai-agent/v1/sessions/${sessionId}/messages`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      message: { sequenceId: Date.now(), type: "Text", text },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Send message failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as { messages: AgentMessage[] };
+  const parts = (json.messages ?? [])
+    .filter((m) => m.type === "Inform" && typeof m.message === "string")
+    .map((m) => m.message as string);
+  if (parts.length === 0) {
+    throw new Error(`Agent returned no Inform messages: ${JSON.stringify(json)}`);
+  }
+  return parts.join("\n\n");
+}
+
+async function endSession(accessToken: string, sessionId: string): Promise<void> {
+  const url = `${env.SF_EINSTEIN_API_BASE}/einstein/ai-agent/v1/sessions/${sessionId}`;
+  await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-session-end-reason": "UserRequest",
+    },
+  }).catch((e) => log("end session failed (non-fatal)", String(e)));
+}
+
+async function getAccountSummary(account: string): Promise<string> {
+  const token = await getAccessToken();
+  const sessionId = await startSession(token);
+  log("session started", { sessionId });
+  try {
+    const prompt = `Summarize the account "${account}". Return the full markdown summary.`;
+    return await sendMessage(token, sessionId, prompt);
+  } finally {
+    await endSession(token, sessionId);
+  }
+}
+
+function buildMcpServer(): Server {
+  const server = new Server(
+    { name: "agentforce-account-summary", version: "0.2.0" },
+    { capabilities: { tools: {} } },
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+      {
+        name: "get_account_summary",
+        description:
+          "Return a markdown summary of a Salesforce Account by Name or Id, generated by the Account Summary Agentforce agent. Use when a user asks for a quick overview of an account, its key opportunities, recent cases, or primary contacts.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            account: {
+              type: "string",
+              description:
+                "Account Name (fuzzy match) or 15/18-char Account Id (001...).",
+            },
+          },
+          required: ["account"],
+        },
+      },
+    ],
+  }));
+
+  const CallInput = z.object({ account: z.string().min(1) });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (request.params.name !== "get_account_summary") {
+      throw new Error(`Unknown tool: ${request.params.name}`);
+    }
+    const { account } = CallInput.parse(request.params.arguments);
+    try {
+      const summary = await getAccountSummary(account);
+      return { content: [{ type: "text", text: summary }] };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log("get_account_summary error", msg);
+      return {
+        isError: true,
+        content: [{ type: "text", text: `Error: ${msg}` }],
+      };
+    }
+  });
+
+  return server;
+}
+
+function requireBearer(req: Request, res: Response, next: NextFunction) {
+  if (!env.MCP_BEARER_TOKEN) return next();
+  const header = req.header("authorization") ?? "";
+  const [scheme, token] = header.split(" ");
+  if (scheme !== "Bearer" || token !== env.MCP_BEARER_TOKEN) {
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized" },
+      id: null,
+    });
+    return;
+  }
+  next();
+}
+
+async function main() {
+  const app = express();
+  app.use(express.json({ limit: "4mb" }));
+
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true, agentId: env.SF_AGENT_ID });
+  });
+
+  app.all("/mcp", requireBearer, async (req, res) => {
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    const server = buildMcpServer();
+    res.on("close", () => {
+      transport.close().catch(() => undefined);
+      server.close().catch(() => undefined);
+    });
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (err) {
+      log("mcp handler error", String(err));
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: { code: -32603, message: "Internal server error" },
+          id: null,
+        });
+      }
+    }
+  });
+
+  app.listen(env.PORT, () => {
+    log(
+      `ready on :${env.PORT} (POST /mcp)` +
+        (env.MCP_BEARER_TOKEN ? " [bearer auth enabled]" : " [NO AUTH]"),
+    );
+  });
+}
+
+main().catch((err) => {
+  log("fatal", String(err));
+  process.exit(1);
+});

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bot xmlns="http://soap.sforce.com/2006/04/metadata">
+    <agentDSLEnabled>true</agentDSLEnabled>
+    <agentType>AgentforceEmployeeAgent</agentType>
+    <botMlDomain>
+        <label>Account Summary Agent</label>
+        <name>AccountSummaryAgent</name>
+    </botMlDomain>
+    <botSource>None</botSource>
+    <description>Internal agent that returns a markdown summary of a Salesforce Account (company info, top open opportunities, recent cases, key contacts, and total closed-won revenue) given an Account name or Id. Invoked by an MCP server via the Agent API.</description>
+    <label>Account Summary Agent</label>
+    <logPrivateConversationData>false</logPrivateConversationData>
+    <richContentEnabled>true</richContentEnabled>
+    <sessionTimeout>0</sessionTimeout>
+    <type>InternalCopilot</type>
+</Bot>

@@ -1,0 +1,14 @@
+{
+  "required" : [ "accountNameOrId" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "accountNameOrId" : {
+      "title" : "Account Name or Id",
+      "description" : "The Account Name (fuzzy match, top result wins) OR the Account Id (15- or 18-char, 001-prefixed).",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType"
+}

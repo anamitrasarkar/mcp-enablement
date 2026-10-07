@@ -1,0 +1,30 @@
+{
+  "name": "agentforce-account-summary-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server exposing the Account Summary Agentforce agent via the Salesforce Agent API",
+  "type": "module",
+  "bin": {
+    "agentforce-account-summary-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@types/express": "^5.0.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
