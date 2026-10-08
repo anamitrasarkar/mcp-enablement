@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Demo Flow — Slack + Agentforce via Custom MCP</title>
+<style>
+  :root {
+    --note: #2563eb;    --note-bg: #dbeafe;
+    --tip: #16a34a;     --tip-bg: #dcfce7;
+    --imp: #7c3aed;     --imp-bg: #ede9fe;
+    --warn: #d97706;    --warn-bg: #fef3c7;
+    --caut: #dc2626;    --caut-bg: #fee2e2;
+    --ink: #0f172a;     --muted: #475569;
+    --rule: #e2e8f0;
+    --show: #0369a1;    --show-bg: #e0f2fe;
+    --say:  #15803d;    --say-bg:  #dcfce7;
+    --point:#b45309;    --point-bg:#fef3c7;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.5;
+    font-size: 11pt;
+  }
+  body { padding: 32px 52px; max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 24pt; margin: 0 0 2px; letter-spacing: -0.01em; }
+  h1 + .subtitle { color: var(--muted); font-size: 12pt; margin-bottom: 20px; }
+  h2 { font-size: 15pt; margin: 24px 0 8px; letter-spacing: -0.01em; }
+  h3 { font-size: 12.5pt; margin: 18px 0 4px; }
+  p { margin: 6px 0; }
+  hr { border: none; border-top: 1px solid var(--rule); margin: 18px 0; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10pt; }
+  pre {
+    background: #0f172a; color: #e2e8f0;
+    padding: 10px 14px; border-radius: 8px;
+    font-size: 10pt; line-height: 1.4;
+    overflow: auto;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 8px 0 12px;
+    font-size: 10pt;
+  }
+  th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { background: #f8fafc; font-weight: 600; }
+  .callout {
+    border-left: 4px solid; padding: 8px 12px; margin: 8px 0;
+    border-radius: 6px; page-break-inside: avoid;
+  }
+  .callout .label {
+    font-weight: 700; font-size: 9.5pt; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 2px; display: block;
+  }
+  .callout p { margin: 2px 0; }
+  .note { background: var(--note-bg); border-color: var(--note); }
+  .note .label { color: var(--note); }
+  .tip  { background: var(--tip-bg);  border-color: var(--tip);  }
+  .tip  .label { color: var(--tip); }
+  .imp  { background: var(--imp-bg);  border-color: var(--imp);  }
+  .imp  .label { color: var(--imp); }
+  .warn { background: var(--warn-bg); border-color: var(--warn); }
+  .warn .label { color: var(--warn); }
+  .caut { background: var(--caut-bg); border-color: var(--caut); }
+  .caut .label { color: var(--caut); }
+
+  .step {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    page-break-inside: avoid;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 12.5pt; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-right: 6px;
+  }
+  .pill.show  { background: var(--show-bg);  color: var(--show); }
+  .pill.say   { background: var(--say-bg);   color: var(--say); }
+  .pill.point { background: var(--point-bg); color: var(--point); }
+  .step .block { margin: 6px 0; }
+  .step .block.say em,
+  .step .block.say p { font-style: italic; }
+  .page-break { page-break-before: always; }
+  ul { margin: 4px 0 8px 20px; }
+  li { margin: 2px 0; }
+  @media print {
+    body { padding: 0; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Demo Flow — Slack + Agentforce via Custom MCP</h1>
+<div class="subtitle">Click-by-click runbook with talk tracks · ~8–10 minutes</div>
+
+<p><strong>Audience:</strong> Business + IT leaders, Thursday</p>
+<p><strong>Persona:</strong> Jennifer Hynes, Senior AE, 9 minutes before her 11 am renewal call with Omega, Inc.</p>
+<p>Each step has three parts: <span class="pill show">Show</span> what to click/type · <span class="pill say">Say</span> talk track · <span class="pill point">Point</span> where to physically point.</p>
+
+<hr/>
+
+<h2>Before you walk in — the setup check</h2>
+<table>
+  <thead><tr><th>Window</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Slack</strong></td><td>DM with Slackbot open, empty message box, workspace sidebar visible</td></tr>
+    <tr><td><strong>Salesforce</strong></td><td>Omega, Inc. Account record loaded (second tab in Setup → Agents, backgrounded)</td></tr>
+    <tr><td><strong>Terminal 1</strong></td><td>MCP server running, log line <code>[agentforce-mcp] ready on :3000</code></td></tr>
+    <tr><td><strong>Terminal 2</strong></td><td>Claude Code open, cursor ready</td></tr>
+    <tr><td><strong>Projection</strong></td><td>Slack is the active window</td></tr>
+  </tbody>
+</table>
+<p>Smoke-test both paths against <strong>Acme Partners</strong> 10 minutes before. If anything fails, see Section 9 of <code>demo-script.md</code>.</p>
+
+<div class="page-break"></div>
+
+<div class="step">
+  <h3>Step 1 — Open on Jennifer's reality</h3>
+  <div class="block show"><span class="pill show">Show</span> Nothing — stand up, look at the room.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"Meet Jennifer. Senior AE. In nine minutes she has a renewal call with Omega, Inc. The last conversation was six weeks ago. There was a budget thread, a case her CSM filed, a new contact. All of it is in Salesforce. <strong>None of it is in her head.</strong> She's in Slack. Watch what she does."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 2 — Show Slack as her workspace</h3>
+  <div class="block show"><span class="pill show">Show</span> Slack is already projected. Make the Slackbot DM the active pane.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"This is Slack. This is where Jennifer already lives. She isn't going to open Salesforce. She isn't opening a new tool. She's doing what she already does — asking a question."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 3 — Jennifer types her Slack prompt</h3>
+  <div class="block show"><span class="pill show">Show</span> Click the Slackbot message box. Type <strong>slowly</strong> so the room can read along:
+    <pre><code>Give me a snapshot of the Omega, Inc. account — opportunities, cases, contacts.</code></pre>
+    Press <strong>Enter</strong>.
+  </div>
+  <div class="block say"><span class="pill say">Say</span> (while typing) <em>"She's not asking in any special syntax. No SQL. No field names. The way a human would ask."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 4 — Slackbot answers — the "today" win</h3>
+  <div class="block show"><span class="pill show">Show</span> Slackbot's response fills the thread. Wait for it fully.</div>
+  <div class="block point"><span class="pill point">Point</span> The reply content.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"Three seconds. Salesforce data, in the channel she already lives in. <strong>No training. No new tool. No tab-flipping.</strong> For a sales team of 200 reps saving five minutes a day, that's two full headcount back on productive work."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 5 — Reveal how it's wired (the admin page)</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch Slack to the <strong>workspace admin</strong> view. Navigate to <strong>Salesforce MCP Servers</strong>.</div>
+  <div class="block point"><span class="pill point">Point</span> The row showing <code>sobject-all</code> with status <strong>Connected</strong>.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"This is the entire configuration. <strong>One row.</strong> One Salesforce MCP server, called <code>sobject-all</code>, registered by our workspace admin. From that moment on, Slackbot knew how to call Salesforce. Zero per-user setup. That's the pattern we're going to build on."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 6 — Frame the gap</h3>
+  <div class="block show"><span class="pill show">Show</span> Keep the admin page visible.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"<code>sobject-all</code> is Salesforce's generic SObject bridge. Great for raw record access. But watch — it does <strong>not</strong> apply Trust Layer masking. It does <strong>not</strong> retrieve free-text custom fields like Call Notes through a governed action. It does <strong>not</strong> produce a consistent, curated markdown format you can design once and ship everywhere. For simple lookups, perfect. For the <strong>governed experience</strong> we need, we add one more thing to this page."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 7 — Switch to Claude Code to preview the governed path</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch projection to <strong>Terminal 2 (Claude Code)</strong>.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"Our Salesforce team already built an Agentforce agent called <strong>AccountSummaryAgent</strong>. I'm about to call it — not from Slack yet, from a developer tool called Claude Code — because that's the fastest way to show you what the governed Slack experience will look like once we add the second MCP server to that admin page."</em></div>
+</div>
+
+<div class="page-break"></div>
+
+<div class="step">
+  <h3>Step 8 — Type the Claude Code prompt</h3>
+  <div class="block show"><span class="pill show">Show</span> In the Claude Code prompt, type:
+    <pre><code>Summarize the Omega, Inc. account using Agentforce.</code></pre>
+    Press <strong>Enter</strong>.
+  </div>
+  <div class="block say"><span class="pill say">Say</span> (while it runs) <em>"Same account Jennifer just asked about in Slack. Same question, different wording. Watch the output."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 9 — The governed response arrives — moment one</h3>
+  <div class="block show"><span class="pill show">Show</span> The markdown brief fills the terminal. Scroll to the <strong>Call Notes</strong> section.</div>
+  <div class="block point"><span class="pill point">Point</span> The blockquote with the $3M money market / 50bps / 11-year relationship passage.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"<strong>This block.</strong> Her CSM typed this in Salesforce three weeks ago. Jennifer has never seen it. The agent didn't make it up — it called a custom Apex action that reads a custom field called <code>Call_Notes__c</code>, and formatted the passage as a markdown blockquote. Now she's walking into a renewal call knowing there's a pricing exception pending for a 50bps competitor offer."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 10 — The governed response — moment two</h3>
+  <div class="block show"><span class="pill show">Show</span> Scroll up to the <strong>Company Info</strong> section.</div>
+  <div class="block point"><span class="pill point">Point</span> The <code>Website: URL_Redacted</code> line.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"<strong>This.</strong> Salesforce's Trust Layer just masked a URL field on the way out. <strong>We didn't configure Claude Code to do that. We didn't configure the MCP server to do that.</strong> The policy lives inside Salesforce. <strong>Every channel that reaches this agent inherits it automatically.</strong> Change the policy once, every AI tool obeys."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 11 — Confirm the agent actually ran</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch to <strong>Terminal 1 (MCP server)</strong>.</div>
+  <div class="block point"><span class="pill point">Point</span> The <code>[agentforce-mcp] session started {"sessionId":"019d..."}</code> log line.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"That's the MCP server logging the Agent API session it just started on Jennifer's behalf. OAuth login, session open, prompt sent, response received, session closed. <strong>Two hundred fifty lines of Node code.</strong> That's the entire translator."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 12 — Ground truth check in Salesforce</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch to the <strong>Salesforce browser tab</strong> on <strong>Omega, Inc.</strong>'s Account record. Scroll to the <strong>Call Notes</strong> field.</div>
+  <div class="block point"><span class="pill point">Point</span> The exact text matching what Claude Code just showed — the money-market passage.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"The agent didn't invent that. <strong>This is the record.</strong> The agent's job is to read it, apply policy, format it, hand it back. Fix the record here — the next Slack message gets the fix. <strong>No stale copies. No separate data store. One source of truth.</strong>"</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 13 — Walk back to Slack admin — make the ask concrete</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch back to Slack → <strong>Salesforce MCP Servers</strong> admin page.</div>
+  <div class="block point"><span class="pill point">Point</span> The current <code>sobject-all</code> row. Then point at the empty space below it.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"Here's the ask, made simple. <strong>We register our custom MCP server on this page.</strong> Same shape as the <code>sobject-all</code> row. Name, HTTPS URL, description, bearer token for auth. From that moment on, Jennifer's <strong>same prompt in Slack</strong> — unchanged — gets the governed Agentforce response you just saw in Claude Code. <strong>Call Notes, Trust Layer masking, consistent format — in Slack.</strong>"</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 14 — Show what adding it looks like (optional, 30 seconds)</h3>
+  <div class="block show"><span class="pill show">Show</span> Click <strong>Add Server</strong>. Walk the form fields <em>without submitting</em>:
+    <ul>
+      <li>Name: <code>agentforce-account-summary</code></li>
+      <li>URL: <code>https://&lt;slug&gt;.trycloudflare.com/mcp</code></li>
+      <li>Description: <em>Returns a governed markdown Account summary via the Account Summary Agentforce agent.</em></li>
+      <li>Organization: same as <code>sobject-all</code></li>
+      <li>Who can use: Everyone</li>
+    </ul>
+    Click <strong>Cancel</strong>.
+  </div>
+  <div class="block say"><span class="pill say">Say</span> <em>"Four fields. Two minutes once we have a stable public URL. We use Cloudflare's tunnel — a one-command public HTTPS front door to our MCP server. <strong>The technical scope of this change is small.</strong> The scope of what it unlocks is not."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 15 — Where this goes (Agent Studio brief view)</h3>
+  <div class="block show"><span class="pill show">Show</span> Switch to Setup → Agents → <strong>Account Summary Agent</strong>. Show <strong>Topics</strong> and <strong>Actions</strong>.</div>
+  <div class="block point"><span class="pill point">Point</span> The list of actions.</div>
+  <div class="block say"><span class="pill say">Say</span> <em>"This is where the agent lives. Topics are what it can talk about. Actions are what it can do. <strong>Every new agent your Agentforce team ships here becomes a new capability</strong> — for Jennifer in Slack, for your developers in Claude Code, for whatever AI tool the business picks up next. Add an action, change <code>SF_AGENT_ID</code>, done."</em></div>
+</div>
+
+<div class="step">
+  <h3>Step 16 — The close</h3>
+  <div class="block show"><span class="pill show">Show</span> Back to the Slack admin page.</div>
+  <div class="block say"><span class="pill say">Say</span> (slowly, do not rush) <em>"Jennifer's story is every seller's story. Every CSM's story. Every service rep's story. Every one of them lives in Slack, Teams, Outlook, a browser, a Zoom — not in Salesforce. <strong>Agentforce is a great agent runtime. MCP is how every other AI tool in the business reaches it, with governance intact.</strong>"</em>
+    <br/><br/>
+    Pause.
+    <br/><br/>
+    <em>"The ask: fund the custom MCP server as a shared product — one instance per environment. Add it to the admin page where <code>sobject-all</code> already lives. From that moment forward, every new agent your Agentforce team ships becomes a new capability — in Slack, in Claude Code, in Bedrock, on day one. <strong>Zero per-tool integration work.</strong>"</em>
+    <br/><br/>
+    Stop. Let it land.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Quick-reference card</h2>
+<table>
+  <thead><tr><th>#</th><th>Pane</th><th>Action</th><th>One line to say</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>—</td><td>Stand up</td><td>"Meet Jennifer. 9 minutes before a renewal call."</td></tr>
+    <tr><td>2</td><td>Slack</td><td>Make it the active window</td><td>"This is where she lives."</td></tr>
+    <tr><td>3</td><td>Slack DM</td><td>Type the snapshot prompt</td><td>"She asks like a human."</td></tr>
+    <tr><td>4</td><td>Slack reply</td><td>Wait, point at it</td><td>"Three seconds. No tab-flipping."</td></tr>
+    <tr><td>5</td><td>Slack admin</td><td>Open MCP Servers page</td><td>"One row. One admin action."</td></tr>
+    <tr><td>6</td><td>Same page</td><td>Point at the gap</td><td>"No Trust Layer. No Call Notes. No consistent format."</td></tr>
+    <tr><td>7</td><td>Claude Code</td><td>Switch</td><td>"Fastest way to show you the governed version."</td></tr>
+    <tr><td>8</td><td>Claude Code</td><td>Type Agentforce prompt</td><td>"Same account. Same question."</td></tr>
+    <tr><td>9</td><td>Response</td><td>Point Call Notes</td><td>"Her CSM typed this. She's never seen it."</td></tr>
+    <tr><td>10</td><td>Response</td><td>Point URL_Redacted</td><td>"Trust Layer, applied automatically."</td></tr>
+    <tr><td>11</td><td>Terminal 1</td><td>Point session log</td><td>"Agent ran. 250 lines of Node."</td></tr>
+    <tr><td>12</td><td>Salesforce</td><td>Point Call Notes field</td><td>"This is the record. One source of truth."</td></tr>
+    <tr><td>13</td><td>Slack admin</td><td>Point empty row below sobject-all</td><td>"Add our MCP here. Same shape."</td></tr>
+    <tr><td>14</td><td>Add Server form</td><td>Walk fields; cancel</td><td>"Four fields. Two minutes."</td></tr>
+    <tr><td>15</td><td>Agent Studio</td><td>Show agent</td><td>"Every new agent becomes a new Slack capability."</td></tr>
+    <tr><td>16</td><td>Slack admin</td><td>Close</td><td>"Fund the universal remote."</td></tr>
+  </tbody>
+</table>
+
+<h2>If someone interrupts mid-flow</h2>
+<table>
+  <thead><tr><th>Interruption</th><th>How to recover (≤15 seconds)</th></tr></thead>
+  <tbody>
+    <tr><td><em>"Can we see this in Slack now?"</em></td><td><em>"Not yet — need to put the custom MCP on that admin page first. Give me the green light; demo in Slack within a week."</em></td></tr>
+    <tr><td><em>"Why not use sobject-all for everything?"</em></td><td><em>"Great for raw data. For governed answers across every AI tool, you want the agent in the loop. The two coexist — one isn't replacing the other."</em></td></tr>
+    <tr><td><em>"Is this secure?"</em></td><td>Three layers: Slack → MCP via bearer token. MCP → Salesforce via OAuth client-credentials. Agent runs as a configured Run-As user with FLS/sharing applied. All standard Salesforce security.</td></tr>
+    <tr><td><em>"How much does this cost to run?"</em></td><td>Two cost centers — client-side LLM tokens (our path is 3–8× more efficient than raw SOQL) and Salesforce Einstein Request credits (bundled with Agentforce licensing).</td></tr>
+    <tr><td><em>"How long did this take to build?"</em></td><td>250 lines of Node. Half a day. The scope of the ask is operational funding, not engineering effort.</td></tr>
+  </tbody>
+</table>
+<p>Then say <em>"Happy to go deeper after"</em> and return to the next step.</p>
+
+</body>
+</html>

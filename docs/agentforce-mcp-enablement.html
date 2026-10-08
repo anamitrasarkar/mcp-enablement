@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>How Claude Code Talks to Agentforce</title>
+<title>How Slack and Claude Code Talk to Agentforce</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
   :root {
@@ -69,6 +69,7 @@
     font-size: 10pt; color: var(--muted);
   }
   .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .swatch.dashed { border: 1.5px dashed #9ca3af; background: #f3f4f6; }
   .mermaid { text-align: center; margin: 10px 0; }
   .page-break { page-break-before: always; }
   ul { margin: 6px 0 10px 22px; }
@@ -81,7 +82,7 @@
 </head>
 <body>
 
-<h1>How Claude Code Talks to Agentforce</h1>
+<h1>How Slack and Claude Code Talk to Agentforce</h1>
 <div class="subtitle">A plain-English walkthrough for business audiences</div>
 <hr/>
 
@@ -89,66 +90,69 @@
 
 <div class="callout note">
   <span class="label">Note</span>
-  <p><strong>What this is:</strong> A bridge that lets a developer (or anyone using Claude Code) ask a question in plain English — like <em>"Summarize the Omega, Inc. account"</em> — and get back a real answer from a Salesforce <strong>Agentforce agent</strong>, pulling live CRM data.</p>
+  <p><strong>What this is:</strong> A bridge that lets any AI client — Slack, Claude Code, Cursor, Bedrock, future tools — ask Salesforce a question in plain English like <em>"Summarize the Omega, Inc. account"</em> and get back a real answer, pulling live CRM data.</p>
 </div>
 
 <div class="callout tip">
   <span class="label">Tip</span>
-  <p><strong>Why it matters:</strong> The same Agentforce agent your sales team uses inside Salesforce can now be called from <strong>any tool that speaks MCP</strong> — Claude Code, VS Code, a chatbot, a script, a web app. One agent, many front doors.</p>
+  <p><strong>Why it matters:</strong> Today Slack can already reach Salesforce for raw data via a standard connector called <code>sobject-all</code>. The next step — and the strategic ask — is to put a <strong>governed Agentforce agent</strong> on the same path. One agent in Salesforce. Many front doors. Governance intact.</p>
 </div>
 
-<h2>The Three Players</h2>
+<h2>The Pieces in Play</h2>
 
 <table>
-  <thead><tr><th>Player</th><th>Role</th><th>Think of it as…</th></tr></thead>
+  <thead><tr><th>Piece</th><th>Role</th><th>Think of it as…</th></tr></thead>
   <tbody>
-    <tr><td><strong>Claude Code</strong></td><td>Where the human types the question</td><td>The front desk</td></tr>
-    <tr><td><strong>MCP Server</strong></td><td>The translator in the middle</td><td>The concierge</td></tr>
-    <tr><td><strong>Agentforce Agent</strong></td><td>The brain that knows your Salesforce data</td><td>The specialist in the back office</td></tr>
+    <tr><td><strong>Slack</strong></td><td>Where the business user already lives</td><td>The front door for sellers, CSMs, service reps</td></tr>
+    <tr><td><strong>Claude Code</strong></td><td>Where developers already live</td><td>The front door for engineers</td></tr>
+    <tr><td><strong>MCP server</strong> (this project)</td><td>The translator between any AI client and the Agentforce agent</td><td>The universal remote</td></tr>
+    <tr><td><strong><code>sobject-all</code></strong> (Salesforce-shipped)</td><td>Generic Slack-to-SObject bridge for raw data</td><td>A direct data pipe (no agent reasoning)</td></tr>
+    <tr><td><strong>Agentforce agent</strong></td><td>The brain that applies policy, custom actions, free-text retrieval</td><td>The specialist in the back office</td></tr>
+    <tr><td><strong>Salesforce</strong></td><td>The system of record</td><td>The vault</td></tr>
   </tbody>
 </table>
 
-<h2>The Flow, in Plain English</h2>
+<h2>The Two Tiers</h2>
+
+<h3>Tier 1 — What works today</h3>
+<p>Slack is already connected to Salesforce. A workspace admin registered the <code>sobject-all</code> MCP server with Slackbot. A seller can DM Slackbot or <code>@</code> it in a channel and get record data back. <strong>Great first win — zero per-user setup, no new tool to learn.</strong></p>
+
+<h3>Tier 2 — The ask</h3>
+<p>The same Slack experience, but routed through our <strong>custom MCP server</strong> so it invokes the governed <strong>Agentforce agent</strong> instead of raw SObject queries. The agent applies Trust Layer masking, retrieves free-text Call Notes, formats output consistently, and — because it's an MCP server — the same wire works for Claude Code, Cursor, Bedrock, and anything that comes next.</p>
+
+<h2>The Flow, in Plain English (Tier 2)</h2>
 
 <div class="callout imp">
   <span class="label">Important</span>
-  <p><strong>The whole trip takes about 2–4 seconds.</strong> Here's what happens between you hitting Enter and the answer appearing.</p>
+  <p><strong>The whole trip takes about 2–4 seconds.</strong> Here's what happens between the user hitting Enter and the answer appearing.</p>
 </div>
 
-<h3>Step 1 — You ask a question</h3>
-<p>You type into Claude Code: <em>"Summarize the Omega, Inc. account using Agentforce."</em></p>
+<h3>Step 1 — The user asks a question</h3>
+<p>From Slack or Claude Code: <em>"Summarize the Omega, Inc. account."</em></p>
 
-<h3>Step 2 — Claude Code picks the right tool</h3>
-<p>Claude Code has a catalog of available tools. It recognizes your question is about a Salesforce account summary and reaches for the <code>get_account_summary</code> tool.</p>
+<h3>Step 2 — The AI client picks the right tool</h3>
+<p>The AI (Slackbot's AI or Claude Code's model) sees the catalog of registered MCP tools, recognizes an account-summary intent, and reaches for <code>get_account_summary</code>.</p>
 
-<h3>Step 3 — The MCP Server gets the call</h3>
-<p>The MCP server (a small program running locally or in the cloud) receives the request. Its job is to translate the plain-English ask into something Salesforce understands.</p>
+<h3>Step 3 — The MCP server gets the call</h3>
+<p>Our custom MCP server (a small Node program) receives the request. Its job is to translate the plain-English ask into something Salesforce understands.</p>
 
-<h3>Step 4 — The MCP Server logs into Salesforce</h3>
+<h3>Step 4 — The MCP server logs into Salesforce</h3>
 <div class="callout note">
   <span class="label">Note</span>
   <p>Behind the scenes, the server uses <strong>OAuth</strong> — the same technology that lets you "Sign in with Google" — to prove to Salesforce it's allowed to ask questions. It gets back a short-lived access token (good for ~25 minutes, then auto-refreshed).</p>
 </div>
 
-<h3>Step 5 — The MCP Server opens a conversation with the agent</h3>
-<p>It tells Salesforce: <em>"Start a new session with the Account Summary agent."</em> Salesforce returns a <strong>session ID</strong> — think of it as a conversation thread.</p>
+<h3>Step 5 — The MCP server opens a session with the agent</h3>
+<p>It tells Salesforce: <em>"Start a new session with the Account Summary agent."</em> Salesforce returns a <strong>session ID</strong> — a conversation thread.</p>
 
 <h3>Step 6 — The agent gets the question</h3>
-<p>The MCP server passes your question into that session: <em>"Summarize the account named Omega, Inc."</em></p>
+<p>The MCP server passes the question into that session: <em>"Summarize the account named Omega, Inc."</em></p>
 
 <h3>Step 7 — Agentforce does its thing</h3>
-<p>The agent — which has been pre-configured in Salesforce with knowledge of your data model — runs its playbook:</p>
-<ul>
-  <li>Looks up the account record</li>
-  <li>Checks open opportunities</li>
-  <li>Checks recent cases</li>
-  <li>Gathers key contacts</li>
-  <li>Calculates closed-won revenue</li>
-  <li>Formats everything as readable markdown</li>
-</ul>
+<p>The agent runs its playbook: looks up the Account, reads <strong>Call Notes</strong>, checks open Opportunities, checks recent Cases, pulls key Contacts, calculates closed-won revenue, applies <strong>Trust Layer</strong> policies (fields like Website are masked as <code>URL_Redacted</code>), and formats everything as readable markdown.</p>
 
 <h3>Step 8 — The answer flows back</h3>
-<p>The agent's response travels back through the MCP server to Claude Code, which displays it to you — complete with tables, headings, and bullet points.</p>
+<p>The agent's response travels back through the MCP server to the client — Slack or Claude Code — complete with headings, tables, and a block-quoted Call Notes passage.</p>
 
 <h3>Step 9 — Cleanup</h3>
 <p>The MCP server politely closes the session so Salesforce doesn't hold resources open.</p>
@@ -159,41 +163,50 @@
 
 <div class="mermaid">
 flowchart LR
-    U([You]) --&gt;|"Plain English question"| CC[Claude Code]
-    CC --&gt;|"Tool call"| MCP[MCP Server]
-    MCP --&gt;|"1 - OAuth login"| SF[(Salesforce)]
-    SF --&gt;|"Access token"| MCP
-    MCP --&gt;|"2 - Start session"| AG[Agentforce Agent]
-    AG --&gt;|"Session ID"| MCP
-    MCP --&gt;|"3 - Ask question"| AG
-    AG --&gt;|"4 - Markdown answer"| MCP
-    MCP --&gt;|"Answer"| CC
-    CC --&gt;|"Formatted response"| U
+    SU([User in Slack]) --&gt;|"Natural language"| SB[Slackbot AI]
+    SB -.-&gt;|"Tier 1 today"| SO[sobject-all MCP]
+    SO -.-&gt;|"Raw SObject REST"| SF[(Salesforce)]
+
+    SB --&gt;|"Tier 2 — the ask"| MCP[Custom MCP server]
+    CC([Developer in Claude Code]) --&gt;|"Tool call"| MCP
+    OT([Cursor / Bedrock / Vertex / future]) --&gt;|"Tool call"| MCP
+
+    MCP --&gt;|"OAuth + Agent API"| AG[Agentforce Agent]
+    AG --&gt;|"Apex invocable"| APX[AccountSummaryAction]
+    APX --&gt;|"SOQL"| SF
+    SF --&gt;|"Records"| APX
+    APX --&gt;|"Markdown"| AG
+    AG --&gt;|"Governed brief"| MCP
+    MCP --&gt;|"Reply"| SU
+    MCP --&gt;|"Reply"| CC
+    MCP --&gt;|"Reply"| OT
 
     classDef user fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
-    classDef claude fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef today fill:#f3f4f6,stroke:#9ca3af,color:#374151,stroke-dasharray: 4 4
     classDef bridge fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef sf fill:#e0e7ff,stroke:#6366f1,color:#312e81
 
-    class U user
-    class CC claude
-    class MCP bridge
-    class AG,SF sf
+    class SU,CC,OT user
+    class SO today
+    class SB,MCP bridge
+    class AG,APX,SF sf
 </div>
 
 <p><strong>Legend</strong></p>
 <div class="legend-row">
-  <span class="chip"><span class="swatch" style="background:#dbeafe;border:1px solid #2563eb"></span> Blue — the human</span>
-  <span class="chip"><span class="swatch" style="background:#fef3c7;border:1px solid #d97706"></span> Yellow — Claude Code (the front door)</span>
-  <span class="chip"><span class="swatch" style="background:#dcfce7;border:1px solid #16a34a"></span> Green — the MCP server (the translator)</span>
-  <span class="chip"><span class="swatch" style="background:#e0e7ff;border:1px solid #6366f1"></span> Indigo — Salesforce &amp; the Agentforce agent (the brain)</span>
+  <span class="chip"><span class="swatch" style="background:#dbeafe;border:1px solid #2563eb"></span> Blue — the human (Slack user, developer, future AI consumer)</span>
+  <span class="chip"><span class="swatch dashed"></span> Grey dashed — Tier 1 today (Slackbot → <code>sobject-all</code> → raw records)</span>
+  <span class="chip"><span class="swatch" style="background:#dcfce7;border:1px solid #16a34a"></span> Green — the translators (Slackbot AI, our MCP server)</span>
+  <span class="chip"><span class="swatch" style="background:#e0e7ff;border:1px solid #6366f1"></span> Indigo — Salesforce (Agentforce agent, Apex action, data)</span>
 </div>
+
+<div class="page-break"></div>
 
 <h2>What the Business User Sees</h2>
 
 <div class="callout tip">
   <span class="label">Tip</span>
-  <p>A clean, formatted answer like this:</p>
+  <p>On the Tier 2 path, a clean, formatted answer like this:</p>
 </div>
 
 <pre><code># Account Summary: Omega, Inc.
@@ -227,25 +240,23 @@ _No open opportunities._
 $0.00
 </code></pre>
 
-<p>No SQL. No clicking through tabs. No training on where to find the data. <strong>And notice two governance-grade details in that output:</strong> the <code>URL_Redacted</code> field (Trust Layer policy applied automatically) and the full Call Notes passage (free-text relationship context that would have taken a rep minutes to hunt down in Chatter).</p>
-
-<div class="page-break"></div>
+<p>No SQL. No clicking through tabs. No training on where to find the data. <strong>And notice two governance-grade details in that output:</strong> the <code>URL_Redacted</code> field (Trust Layer policy applied automatically) and the full Call Notes passage (free-text relationship context that would have taken a rep minutes to hunt down in Chatter). <strong>The Tier 1 <code>sobject-all</code> path returns raw record fields — the governance moments above do not happen.</strong></p>
 
 <h2>Why This Is a Big Deal</h2>
 
 <div class="callout imp">
   <span class="label">Important</span>
-  <p><strong>One agent. Many channels.</strong> The same Agentforce agent that answers inside Salesforce can now answer inside developer tools, chat clients, portals, mobile apps — anywhere MCP is supported.</p>
+  <p><strong>One agent. Many channels.</strong> The same Agentforce agent your team builds can answer inside Slack, Claude Code, Cursor, Bedrock, Vertex — anywhere MCP is supported. <strong>Build once; every surface the business already uses picks it up.</strong></p>
 </div>
 
 <div class="callout tip">
   <span class="label">Tip</span>
-  <p><strong>Reuse, don't rebuild.</strong> Instead of building a new integration for every tool that wants Salesforce data, you build the agent once and expose it via MCP.</p>
+  <p><strong>Progression, not replacement.</strong> <code>sobject-all</code> isn't going away — it's a great fit for simple data access. The custom MCP + Agentforce path adds the <strong>governance tier</strong>: Trust Layer, custom Apex actions, free-text retrieval, consistent output format. Use the right tool for the question.</p>
 </div>
 
 <div class="callout note">
   <span class="label">Note</span>
-  <p><strong>Governance stays in Salesforce.</strong> The agent's permissions, data access, and guardrails are configured in Salesforce — not in the client. Change them once, every channel inherits the change.</p>
+  <p><strong>Governance stays in Salesforce.</strong> The agent's permissions, data access, Trust Layer, and prompt guardrails are configured in Salesforce — not in the client. Change them once, every channel inherits the change on the next call.</p>
 </div>
 
 <h2>Security at a Glance</h2>
@@ -258,11 +269,12 @@ $0.00
 <table>
   <thead><tr><th>Concern</th><th>How it's handled</th></tr></thead>
   <tbody>
-    <tr><td><strong>Who can call the MCP server?</strong></td><td>Optional bearer-token authentication; recommended when the server is exposed over the internet.</td></tr>
-    <tr><td><strong>How does the server talk to Salesforce?</strong></td><td>OAuth 2.0 Client Credentials flow with a Connected App — no passwords, no long-lived keys in code.</td></tr>
-    <tr><td><strong>What user does the agent run as?</strong></td><td>A configured "Run-As" user on the Connected App — their permission set controls what the agent can see.</td></tr>
+    <tr><td><strong>Who can call the MCP server?</strong></td><td>Bearer-token authentication; required when exposed over the internet (e.g. via Cloudflare for the Slack path).</td></tr>
+    <tr><td><strong>How does the server talk to Salesforce?</strong></td><td>OAuth 2.0 Client Credentials flow with an External Client App — no passwords, no long-lived keys in code.</td></tr>
+    <tr><td><strong>What user does the agent run as?</strong></td><td>A configured "Run-As" user on the ECA — their permission set controls what the agent can see.</td></tr>
     <tr><td><strong>Where do credentials live?</strong></td><td>In a local <code>.env</code> file, never committed to source control.</td></tr>
     <tr><td><strong>Does the agent see more than it should?</strong></td><td>No — it inherits the Run-As user's data visibility (sharing rules, FLS, record access).</td></tr>
+    <tr><td><strong>Does Slack see Salesforce data mid-flight?</strong></td><td>No — Slack sees only the final rendered reply in the user's thread.</td></tr>
   </tbody>
 </table>
 
@@ -271,9 +283,10 @@ $0.00
 <table>
   <thead><tr><th>Before</th><th>After</th></tr></thead>
   <tbody>
-    <tr><td>Rep opens Salesforce, clicks through 3 tabs</td><td>Rep asks in natural language, gets a summary in 3 seconds</td></tr>
-    <tr><td>Dev builds a new integration per channel</td><td>Dev builds the agent once, every channel plugs in</td></tr>
-    <tr><td>Each new tool needs a security review</td><td>One MCP server, one review, many consumers</td></tr>
+    <tr><td>Rep opens Salesforce, clicks through 3 tabs</td><td>Rep asks in natural language in Slack, gets the governed answer in 3 seconds</td></tr>
+    <tr><td>Dev builds a new Salesforce integration per AI tool</td><td>Dev builds the Agentforce agent once; every MCP client plugs in</td></tr>
+    <tr><td>Each new AI tool needs its own security review</td><td>One MCP server, one review, many consumers</td></tr>
+    <tr><td>Policy changes require updating every integration</td><td>Policy changes in Salesforce; every channel inherits on the next call</td></tr>
   </tbody>
 </table>
 
@@ -281,7 +294,12 @@ $0.00
 
 <div class="callout note">
   <span class="label">Note</span>
-  <p><strong>"Is my data leaving Salesforce?"</strong><br/>Only the agent's final answer leaves — and only to the client that asked. Salesforce's data stays in Salesforce.</p>
+  <p><strong>"Why not just stick with <code>sobject-all</code>?"</strong><br/><code>sobject-all</code> is Salesforce's generic SObject bridge for Slack. It's great for direct record access. It does <strong>not</strong> invoke your Agentforce agents, apply Trust Layer masking, run custom Apex actions, retrieve free-text Call Notes, or produce a consistent markdown template. For the governed, reusable experience across every AI tool the business picks up, you want the agent in the loop.</p>
+</div>
+
+<div class="callout note">
+  <span class="label">Note</span>
+  <p><strong>"Is my data leaving Salesforce?"</strong><br/>Only the agent's final answer leaves — and only to the client that asked. Salesforce's data stays in Salesforce. The MCP server doesn't persist anything.</p>
 </div>
 
 <div class="callout note">
@@ -296,14 +314,14 @@ $0.00
 
 <div class="callout warn">
   <span class="label">Warning</span>
-  <p><strong>"What's the catch?"</strong><br/>The agent only knows what you've taught it. If you ask it something outside its topics (e.g. HR questions when it's an account-summary agent), it will politely decline. That's a feature, not a bug.</p>
+  <p><strong>"What's the catch?"</strong><br/>The agent only knows what you've taught it. If someone asks the Account Summary agent about HR data, it will politely decline. That's a feature, not a bug.</p>
 </div>
 
 <h2>In One Sentence</h2>
 
 <div class="callout tip">
   <span class="label">Tip</span>
-  <p><strong>Agentforce + MCP = your Salesforce agents become available anywhere a developer or user already works, with security and governance intact.</strong></p>
+  <p><strong>Slack already gives us Salesforce data today. The custom MCP + Agentforce path gives us the same experience with governance — in Slack, in Claude Code, and in every AI tool the business picks up next.</strong></p>
 </div>
 
 <script>
